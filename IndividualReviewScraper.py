@@ -43,7 +43,7 @@ try:
         idd = item.get_attribute("id")
         #print(idd)
 
-        #Checks to see if the asset exists
+        #Checks to see if the name asset exists
         if item.find_elements_by_xpath('//*[@id="%s"]/section/div[1]/div[2]/div/div/div/div/span/h2/strong/span' % idd):
 
             #store the text of the element that follows this path, which remains the same across all IDs
@@ -56,7 +56,7 @@ try:
         durability_score = item.find_element_by_xpath('//*[@id="view_228-field_223-%s-value"]' % idd).get_attribute('value')
         #print(durability_score)
 
-        #create a blank accumulator variable that will be used for each chair
+        #create a blank accumulator variable that will be used to number each review within each wheelchair
         n = 0
 
         #If a product has an undefined score, that is because there are no reviews, so reflect that in the code 
@@ -93,39 +93,51 @@ try:
             #create a loop that counts each review on each chair's page
             for item in driver.find_elements_by_class_name("kn-list-item-container"):
                 
+                #pull in the name asset so that each review has a product name associated with it/for the CSV
                 review_name = name
                 #print(review_name)
 
+                #add one to the count for each review for each chair (e.g. chair 1 review 1, c1 r2, c1 r3, etc.)
                 n +=1 
                 # print (n)
+                
+                #set the review number equal to n
+                review_num = n
 
+                #Save the reivew ID
                 review_id = item.get_attribute("id")
                 #print(review_id)
 
-                review_num = n 
-
+            
+                #If there is a review id, then the following elements will populate and fill in "N/A" for any blank values
                 if item.find_elements_by_xpath('//*[@id="%s"]/section/div/div[1]/div/div/div' % review_id):
                     author = item.find_element_by_xpath('//*[@id="%s"]/section/div/div[1]/div/div/div' % review_id).text 
                 else: 
                     author = "N/A"
 
+                #All reviews must have 3 scores, so no need for if else logic; same process as above. 
                 rev_dur_score = item.find_element_by_xpath('//*[@id="view_233-field_197-%s-value"]' % review_id).get_attribute('value')
                 #print(rev_dur_score)
 
+                #All reviews must have 3 scores, so no need for if else logic; same process as above. 
                 rev_ease_score = item.find_element_by_xpath('//*[@id="view_233-field_198-%s-value"]' % review_id).get_attribute('value')
 
+                #All reviews must have 3 scores, so no need for if else logic; same process as above. 
                 rev_expectations_score = item.find_element_by_xpath('//*[@id="view_233-field_199-%s-value"]' % review_id).get_attribute('value')
 
+                #If there is a review id, then the following elements will populate and fill in "N/A" for any blank values
                 if item.find_elements_by_xpath('//*[@id="%s"]/section/div/div[4]/div/div/div[2]' % review_id):
                     strengths = item.find_element_by_xpath('//*[@id="%s"]/section/div/div[4]/div/div/div[2]' % review_id).text 
                 else: 
                     strengths = "N/A"
-
+                    
+                #If there is a review id, then the following elements will populate and fill in "N/A" for any blank values
                 if item.find_elements_by_xpath('//*[@id="%s"]/section/div/div[4]/div/div/div[4]' % review_id):
                     weaknesses = item.find_element_by_xpath('//*[@id="%s"]/section/div/div[4]/div/div/div[4]' % review_id).text 
                 else: 
                     weakenesses = "N/A"
 
+                #If there is a review id, then the following elements will populate and fill in "N/A" for any blank values
                 if item.find_elements_by_xpath('//*[@id="%s"]/section/div/div[4]/div/div/div[6]' % review_id):
                     other_comments = item.find_element_by_xpath('//*[@id="%s"]/section/div/div[4]/div/div/div[6]' % review_id).text 
                 else: 
@@ -145,7 +157,7 @@ try:
     #Create an alert for when the scraper has completed the page 
     print('done!')
 
-
+    #define the columns for your csv file 
     csv_columns = ['review name', 'review number', 'review author', 'review duration score', 'review ease score', 
     'review expectation score', 'strengths', 'weaknesses', 'other comments', 'review id']
 
@@ -155,6 +167,7 @@ try:
     #     writer.writeheader()
     #     for item in chairs:
     #         writer.writerow(item)
+    
     #only use when adding to the the csv, not writing the first set of results
     with open('TEST2.csv', 'a+', encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=csv_columns)
