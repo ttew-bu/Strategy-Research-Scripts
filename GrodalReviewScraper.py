@@ -1,13 +1,14 @@
 #Tristan Tew
 #GrodalReviewScraper
 #This program will utilize various packages to scrape, aggregate, and export review data for wheelchairs from the United Spinal Website.
-#Due to website connection, I have a few places where one must substitute the code to recreate my dataset.
+#Due to website connection issues/firewalls on frequent attempts to open the page, this program does need to run one page at a time and be manually reset
 
 from selenium import webdriver 
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import time
 import csv
 
 #I did not iterate through a loop to get the pages since there were just two URLs to work with
@@ -25,22 +26,25 @@ test_url = 'https://unitedspinal.org/wheelchair-reviews-views/#home/?view_228_pa
 driver = webdriver.Chrome(executable_path='C:/Users/trist/chromedriver/chromedriver.exe')
 
 #get the url in the driver, use either URL or URL_two depending on which page you're trying to scrape
-driver.get(url_two)
+driver.get(url)
 
 try:
 
     #wait for the page to load using an arbitrary asset that is created via Javascript on the destination page
-    element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.ID, 'view_228-field_223-5d13e3553ce161255b4bdaae-value'))
-        #5d13e3483ce161255b4bd2cc - used in the line above when waiting for the first page to load 
-        #5d13e3553ce161255b4bdaae - used in the line above when waiting for the second page to load 
-        #5d13e34a3ce161255b4bd3cd - used for small batch tests to make sure the program works
+    element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CLASS_NAME, 'kn-detail-body'))
     )
 
     #Create an empty dictionary 
     chairs = []
 
+    #Create a counter for product IDs in the database
+    num = 0
+
     #Iterate over the elements on the website within the class that contains all of the Javascript-enabled elements
     for item in driver.find_elements_by_class_name("kn-list-item-container"):
+
+        #Iterate to create unique ID for dataset
+        num += 1 
 
         #idd stores the "id" for every chair that gets loaded on the website
         idd = item.get_attribute("id")
@@ -145,7 +149,7 @@ try:
             driver.switch_to.window(driver.window_handles[0])
 
         #Add all of the new chairs to the chairs dictionary 
-        chairs.append({'Name': name, 'Producer': producer, 'Producer Country' : producer_country, 'Production Status': production_status, 'Expectation Score': expectation_score, 
+        chairs.append({'Unique ID': num, 'Name': name, 'Producer': producer, 'Producer Country' : producer_country, 'Production Status': production_status, 'Expectation Score': expectation_score, 
         'Durability Score': durability_score, 'Ease of Use Score': user_friendliness_score, 'Product Description': product_description, 'Number of Reviews': n, "Image URL":image})
 
     #Create an alert for when the scraper has completed the page 
@@ -161,19 +165,19 @@ try:
     #below are the two command sets for exporting to a CSV. I could not automate the system as it crashed the program, so for the first page I ran the first set and
     #the second one for the second set. 
 
-    # only use when initially creating the CSV, not adding on the second page of results
-    # with open('TEST2.csv', 'w', encoding="utf-8") as f:
-    #     writer = csv.DictWriter(f, fieldnames=csv_columns)
-    #     writer.writeheader()
-    #     for item in chairs:
-    #         writer.writerow(item)
-
-    #only use when adding to the the csv, not writing the first set of results
-    with open('TEST2.csv', 'a+', encoding="utf-8") as f:
+# only use when initially creating the CSV, not adding on the second page of results
+    with open('TEST2.csv', 'w', encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=csv_columns)
         writer.writeheader()
         for item in chairs:
             writer.writerow(item)
+
+#only use when adding to the the csv, not writing the first set of results
+# with open('TEST2.csv', 'a+', encoding="utf-8") as f:
+#     writer = csv.DictWriter(f, fieldnames=csv_columns)
+#     writer.writeheader()
+#     for item in chairs:
+#         writer.writerow(item)
 
 finally:
     driver.quit()

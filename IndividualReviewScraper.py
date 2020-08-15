@@ -1,5 +1,7 @@
 #Tristan Tew
 #IndividualReviewScraper
+#This program will utilize various packages to scrape, aggregate, and export individual review data for wheelchairs from the United Spinal Website.
+#Due to website connection issues/firewalls on frequent attempts to open the page, this program does need to run one page at a time and be manually reset
 
 from selenium import webdriver 
 from selenium.webdriver.common.keys import Keys
@@ -7,7 +9,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import csv
-
 
 #store the url of the first page
 url = 'https://unitedspinal.org/wheelchair-reviews-views/#home/?view_228_page=1&view_228_filters=%5B%7B%22field%22%3A%22field_210%22%2C%22operator%22%3A%22in%22%2C%22value%22%3A%5B%22Manual%20Wheelchair%20Alternate%20Propulsion%22%2C%22Manual%20Wheelchairs%20Carbon%20Frame%22%2C%22Manual%20Wheelchairs%20Folding%22%2C%22Manual%20Wheelchairs%20Heavy%20Duty%20%2F%20Bariatric%22%2C%22Manual%20Wheelchairs%20Magnesium%20Frame%22%2C%22Manual%20Wheelchairs%20Rigid%20Frame%22%2C%22Manual%20Wheelchairs%20Standing%22%2C%22Manual%20Wheelchairs%20Titanium%20Frame%22%2C%22Manual%20Wheelchairs%20Transit%22%2C%22Off%20Road%20Manual%20Wheelchairs%22%2C%22Off%20Road%20Power%20Wheelchairs%22%2C%22Pediatric%2FYouth%20Manual%20Wheelchairs%22%2C%22Pediatric%2FYouth%20Power%20Wheelchairs%22%2C%22Pediatric%2FYouth%20Sports%20Wheelchairs%22%2C%22Power%20Wheelchairs%20Folding%20%26%20Transportable%22%2C%22Power%20Wheelchairs%20Front%20Drive%22%2C%22Power%20Wheelchairs%20Heavy%20Duty%20%2F%20Bariatric%22%2C%22Power%20Wheelchairs%20Mid%20Wheel%20Drive%22%2C%22Power%20Wheelchairs%20Other%22%2C%22Power%20Wheelchairs%20Rear%20Drive%22%2C%22Power%20Wheelchairs%20Standing%22%2C%22Self%20Balancing%20Wheelchairs%22%2C%22Sports%20Multi%20Purpose%20Wheelchair%22%2C%22Wheelchairs%20Stair%20Climbing%22%5D%7D%5D&view_228_per_page=500'
@@ -30,20 +31,22 @@ chairs = []
 try:
 
     #wait for the page to load using an arbitrary asset that is created via Javascript on the destination page
-    element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.ID, 'view_228-field_223-5d13e3553ce161255b4bdaae-value'))
-        #5d13e3483ce161255b4bd2cc - used in the line above when waiting for the first page to load 
-        #5d13e3553ce161255b4bdaae - used in the line above when waiting for the second page to load 
-        #5d13e34a3ce161255b4bd3cd - used for small batch tests to make sure the program works
+    element = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CLASS_NAME, 'kn-detail-body'))
+
     )
+    
+    #Give the products a unique ID that counts up
+    num = 0 
 
     #Iterate over the elements on the website within the class that contains all of the Javascript-enabled elements
     for item in driver.find_elements_by_class_name("kn-list-item-container"):
 
         #idd stores the "id" for every chair that gets loaded on the website
         idd = item.get_attribute("id")
+        num += 1
         #print(idd)
 
-        #Checks to see if the name asset exists
+        #Checks to see if the asset exists
         if item.find_elements_by_xpath('//*[@id="%s"]/section/div[1]/div[2]/div/div/div/div/span/h2/strong/span' % idd):
 
             #store the text of the element that follows this path, which remains the same across all IDs
@@ -56,7 +59,7 @@ try:
         durability_score = item.find_element_by_xpath('//*[@id="view_228-field_223-%s-value"]' % idd).get_attribute('value')
         #print(durability_score)
 
-        #create a blank accumulator variable that will be used to number each review within each wheelchair
+        #create a blank accumulator variable that will be used for each chair
         n = 0
 
         #If a product has an undefined score, that is because there are no reviews, so reflect that in the code 
@@ -93,58 +96,50 @@ try:
             #create a loop that counts each review on each chair's page
             for item in driver.find_elements_by_class_name("kn-list-item-container"):
                 
-                #pull in the name asset so that each review has a product name associated with it/for the CSV
                 review_name = name
                 #print(review_name)
 
-                #add one to the count for each review for each chair (e.g. chair 1 review 1, c1 r2, c1 r3, etc.)
                 n +=1 
                 # print (n)
-                
-                #set the review number equal to n
-                review_num = n
 
-                #Save the reivew ID
                 review_id = item.get_attribute("id")
                 #print(review_id)
 
-            
-                #If there is a review id, then the following elements will populate and fill in "N/A" for any blank values
+                review_num = n 
+
                 if item.find_elements_by_xpath('//*[@id="%s"]/section/div/div[1]/div/div/div' % review_id):
                     author = item.find_element_by_xpath('//*[@id="%s"]/section/div/div[1]/div/div/div' % review_id).text 
                 else: 
                     author = "N/A"
 
-                #All reviews must have 3 scores, so no need for if else logic; same process as above. 
+                #Collect the individual scores for one review
                 rev_dur_score = item.find_element_by_xpath('//*[@id="view_233-field_197-%s-value"]' % review_id).get_attribute('value')
                 #print(rev_dur_score)
 
-                #All reviews must have 3 scores, so no need for if else logic; same process as above. 
                 rev_ease_score = item.find_element_by_xpath('//*[@id="view_233-field_198-%s-value"]' % review_id).get_attribute('value')
 
-                #All reviews must have 3 scores, so no need for if else logic; same process as above. 
                 rev_expectations_score = item.find_element_by_xpath('//*[@id="view_233-field_199-%s-value"]' % review_id).get_attribute('value')
 
-                #If there is a review id, then the following elements will populate and fill in "N/A" for any blank values
+                #Check for text before collecting it. 
                 if item.find_elements_by_xpath('//*[@id="%s"]/section/div/div[4]/div/div/div[2]' % review_id):
                     strengths = item.find_element_by_xpath('//*[@id="%s"]/section/div/div[4]/div/div/div[2]' % review_id).text 
                 else: 
                     strengths = "N/A"
-                    
-                #If there is a review id, then the following elements will populate and fill in "N/A" for any blank values
+
+                #Check for text before collecting it
                 if item.find_elements_by_xpath('//*[@id="%s"]/section/div/div[4]/div/div/div[4]' % review_id):
                     weaknesses = item.find_element_by_xpath('//*[@id="%s"]/section/div/div[4]/div/div/div[4]' % review_id).text 
                 else: 
                     weakenesses = "N/A"
 
-                #If there is a review id, then the following elements will populate and fill in "N/A" for any blank values
+                #Check for text before collecting it 
                 if item.find_elements_by_xpath('//*[@id="%s"]/section/div/div[4]/div/div/div[6]' % review_id):
                     other_comments = item.find_element_by_xpath('//*[@id="%s"]/section/div/div[4]/div/div/div[6]' % review_id).text 
                 else: 
                     other_comments = "N/A" 
 
                 #Add all of the new chairs to the chairs dictionary 
-                chairs.append({'review name': review_name, 'review id': review_id, 'review number': review_num, 'review author': author, 'review duration score':rev_dur_score, 
+                chairs.append({'unique id': num, 'review name': review_name, 'review id': review_id, 'review number': review_num, 'review author': author, 'review duration score':rev_dur_score, 
                 'review ease score': rev_ease_score, 'review expectation score': rev_expectations_score, 
                 'strengths': strengths, 'weaknesses': weaknesses, 'other comments': other_comments})
 
@@ -157,8 +152,8 @@ try:
     #Create an alert for when the scraper has completed the page 
     print('done!')
 
-    #define the columns for your csv file 
-    csv_columns = ['review name', 'review number', 'review author', 'review duration score', 'review ease score', 
+
+    csv_columns = ['unique id', 'review name', 'review number', 'review author', 'review duration score', 'review ease score', 
     'review expectation score', 'strengths', 'weaknesses', 'other comments', 'review id']
 
     #only use when initially creating the CSV, not adding on the second page of results
@@ -167,7 +162,6 @@ try:
     #     writer.writeheader()
     #     for item in chairs:
     #         writer.writerow(item)
-    
     #only use when adding to the the csv, not writing the first set of results
     with open('TEST2.csv', 'a+', encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=csv_columns)
